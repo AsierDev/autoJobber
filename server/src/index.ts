@@ -12,6 +12,8 @@ dotenv.config();
 // import authRoutes from './routes/auth';
 // import userRoutes from './routes/user';
 // import resumeRoutes from './routes/resume';
+import resumeRoutes from './routes/resumeRoutes';
+import jobPreferenceRoutes from './routes/jobPreferenceRoutes';
 // import jobRoutes from './routes/job';
 
 // Initialize Express app
@@ -56,7 +58,8 @@ app.get('/', (req, res) => {
 // Register routes (will be enabled once created)
 // app.use('/api/auth', authRoutes);
 // app.use('/api/users', userRoutes);
-// app.use('/api/resumes', resumeRoutes);
+app.use('/api/resumes', resumeRoutes);
+app.use('/api/job-preferences', jobPreferenceRoutes);
 // app.use('/api/jobs', jobRoutes);
 
 // Start server

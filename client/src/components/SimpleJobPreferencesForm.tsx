@@ -1,4 +1,9 @@
-import React, { useState, ChangeEvent, FormEvent } from 'react';
+import React, { useState, ChangeEvent, FormEvent, useEffect } from 'react';
+import { 
+  createJobPreference, 
+  getActiveJobPreference, 
+  updateJobPreference 
+} from '../services/jobPreferenceService';
 
 interface JobPreferenceValues {
   title: string;
@@ -40,8 +45,42 @@ const SimpleJobPreferencesForm: React.FC<JobPreferencesFormProps> = ({ onSubmit,
   });
   
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
+  const [preferenceId, setPreferenceId] = useState<string | null>(null);
+
+  // Cargar preferencias activas al montar el componente
+  useEffect(() => {
+    const fetchActivePreference = async () => {
+      try {
+        setIsLoading(true);
+        const activePreference = await getActiveJobPreference();
+        
+        if (activePreference) {
+          setPreferenceId(activePreference.id);
+          // Convertir preferencias del API al formato del formulario
+          setFormData({
+            title: activePreference.title || '',
+            industry: activePreference.industry || '',
+            location: activePreference.location || '',
+            workMode: activePreference.workMode || '',
+            minSalary: activePreference.minSalary ? activePreference.minSalary.toString() : '',
+            maxSalary: activePreference.maxSalary ? activePreference.maxSalary.toString() : '',
+            companySize: activePreference.companySize || '',
+            keywords: activePreference.keywords ? activePreference.keywords.join(', ') : '',
+          });
+        }
+      } catch (err) {
+        console.error('Error al cargar preferencias:', err);
+        setError('No se pudieron cargar las preferencias existentes');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchActivePreference();
+  }, []);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -79,13 +118,19 @@ const SimpleJobPreferencesForm: React.FC<JobPreferencesFormProps> = ({ onSubmit,
         keywords: formData.keywords ? formData.keywords.split(',').map(k => k.trim()) : [],
       };
       
-      // Llamar a la función de envío o mostrar log
+      // Si se recibió una función onSubmit personalizada, usarla
       if (onSubmit) {
         await onSubmit(formattedData);
       } else {
-        // Simulación
-        console.log('Enviando preferencias:', formattedData);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Si no, usar nuestro servicio API
+        if (preferenceId) {
+          // Actualizar preferencia existente
+          await updateJobPreference(preferenceId, formattedData);
+        } else {
+          // Crear nueva preferencia
+          const response = await createJobPreference(formattedData);
+          setPreferenceId(response.preference.id);
+        }
       }
       
       setSuccess(true);
@@ -96,6 +141,16 @@ const SimpleJobPreferencesForm: React.FC<JobPreferencesFormProps> = ({ onSubmit,
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
+        <div className="flex justify-center items-center h-40">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
@@ -244,15 +299,13 @@ const SimpleJobPreferencesForm: React.FC<JobPreferencesFormProps> = ({ onSubmit,
           />
         </div>
 
-        <div className="flex justify-end">
+        <div className="pt-4">
           <button
             type="submit"
             disabled={isSubmitting}
-            className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-              isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
           >
-            {isSubmitting ? 'Guardando...' : 'Guardar Preferencias'}
+            {isSubmitting ? 'Guardando...' : (preferenceId ? 'Actualizar Preferencias' : 'Guardar Preferencias')}
           </button>
         </div>
       </form>

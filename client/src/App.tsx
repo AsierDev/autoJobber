@@ -5,6 +5,7 @@ import SimpleJobApplicationsList from './components/SimpleJobApplicationsList';
 import SimpleProfileSummary from './components/SimpleProfileSummary';
 import SimpleJobPreferencesForm from './components/SimpleJobPreferencesForm';
 import SimpleResumeUpload from './components/SimpleResumeUpload';
+import { createJobPreference } from './services/jobPreferenceService';
 
 // Definición de tipos
 interface JobApplication {
@@ -92,9 +93,13 @@ const App: React.FC = () => {
   };
   
   const handleSubmitPreferences = async (values: any): Promise<void> => {
-    console.log('Enviando preferencias:', values);
-    // En una app real, esto sería una llamada a la API
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      console.log('Enviando preferencias:', values);
+      await createJobPreference(values);
+    } catch (error) {
+      console.error('Error al guardar preferencias:', error);
+      throw error;
+    }
   };
   
   const handleResumeUploadSuccess = (resumeData: ResumeData): void => {
