@@ -1,8 +1,28 @@
 import React from 'react';
 
-const SimpleJobApplicationsList = ({ applications, onViewDetails, onUpdateStatus }) => {
+interface JobApplication {
+  id: string;
+  jobTitle: string;
+  company: string;
+  location: string | null;
+  applicationDate: string;
+  status: 'applied' | 'interview' | 'offer' | 'rejected' | 'withdrawn' | 'ghosted';
+  matchScore: number | null;
+}
+
+interface JobApplicationsListProps {
+  applications?: JobApplication[];
+  onViewDetails?: (id: string) => void;
+  onUpdateStatus?: (id: string, status: string) => void;
+}
+
+const SimpleJobApplicationsList: React.FC<JobApplicationsListProps> = ({ 
+  applications, 
+  onViewDetails, 
+  onUpdateStatus 
+}) => {
   // Valores de ejemplo si no se proporcionan applications
-  const sampleApplications = applications || [
+  const sampleApplications: JobApplication[] = applications || [
     {
       id: '1',
       jobTitle: 'Frontend Developer',
@@ -24,11 +44,11 @@ const SimpleJobApplicationsList = ({ applications, onViewDetails, onUpdateStatus
   ];
   
   // Funciones por defecto si no se proporcionan
-  const handleViewDetails = onViewDetails || ((id) => console.log(`Ver detalles de ${id}`));
-  const handleUpdateStatus = onUpdateStatus || ((id, status) => console.log(`Actualizar estado de ${id} a ${status}`));
+  const handleViewDetails = onViewDetails || ((id: string) => console.log(`Ver detalles de ${id}`));
+  const handleUpdateStatus = onUpdateStatus || ((id: string, status: string) => console.log(`Actualizar estado de ${id} a ${status}`));
   
   // Mapeo de estados a colores
-  const statusColors = {
+  const statusColors: Record<string, string> = {
     applied: 'bg-blue-100 text-blue-800',
     interview: 'bg-purple-100 text-purple-800',
     offer: 'bg-green-100 text-green-800',
@@ -38,7 +58,7 @@ const SimpleJobApplicationsList = ({ applications, onViewDetails, onUpdateStatus
   };
   
   // Mapeo de estados a etiquetas
-  const statusLabels = {
+  const statusLabels: Record<string, string> = {
     applied: 'Aplicada',
     interview: 'Entrevista',
     offer: 'Oferta',
@@ -117,13 +137,13 @@ const SimpleJobApplicationsList = ({ applications, onViewDetails, onUpdateStatus
                     <div className="w-16 bg-gray-200 rounded-full h-2.5">
                       <div 
                         className={`h-2.5 rounded-full ${
-                          application.matchScore >= 80 ? 'bg-green-500' :
-                          application.matchScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                          application.matchScore && application.matchScore >= 80 ? 'bg-green-500' :
+                          application.matchScore && application.matchScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'
                         }`}
-                        style={{ width: `${application.matchScore}%` }}
+                        style={{ width: `${application.matchScore || 0}%` }}
                       ></div>
                     </div>
-                    <span className="ml-2 text-sm text-gray-700">{application.matchScore}%</span>
+                    <span className="ml-2 text-sm text-gray-700">{application.matchScore || 0}%</span>
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

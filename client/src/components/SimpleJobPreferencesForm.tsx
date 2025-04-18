@@ -1,7 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, ChangeEvent, FormEvent } from 'react';
 
-const SimpleJobPreferencesForm = ({ onSubmit, initialData }) => {
-  const [formData, setFormData] = useState(initialData || {
+interface JobPreferenceValues {
+  title: string;
+  industry: string;
+  location: string;
+  workMode: 'remote' | 'hybrid' | 'onsite' | '';
+  minSalary: string;
+  maxSalary: string;
+  companySize: 'startup' | 'small' | 'medium' | 'large' | 'enterprise' | '';
+  keywords: string;
+}
+
+interface FormattedJobPreferenceValues {
+  title: string;
+  industry: string;
+  location: string;
+  workMode: 'remote' | 'hybrid' | 'onsite' | '';
+  minSalary: number | null;
+  maxSalary: number | null;
+  companySize: 'startup' | 'small' | 'medium' | 'large' | 'enterprise' | '';
+  keywords: string[];
+}
+
+interface JobPreferencesFormProps {
+  onSubmit?: (values: FormattedJobPreferenceValues) => Promise<void>;
+  initialData?: JobPreferenceValues;
+}
+
+const SimpleJobPreferencesForm: React.FC<JobPreferencesFormProps> = ({ onSubmit, initialData }) => {
+  const [formData, setFormData] = useState<JobPreferenceValues>(initialData || {
     title: '',
     industry: '',
     location: '',
@@ -12,11 +39,11 @@ const SimpleJobPreferencesForm = ({ onSubmit, initialData }) => {
     keywords: '',
   });
   
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<boolean>(false);
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -24,7 +51,7 @@ const SimpleJobPreferencesForm = ({ onSubmit, initialData }) => {
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
     // Validación simple
@@ -45,7 +72,7 @@ const SimpleJobPreferencesForm = ({ onSubmit, initialData }) => {
     
     try {
       // Formatear datos
-      const formattedData = {
+      const formattedData: FormattedJobPreferenceValues = {
         ...formData,
         minSalary: formData.minSalary ? Number(formData.minSalary) : null,
         maxSalary: formData.maxSalary ? Number(formData.maxSalary) : null,

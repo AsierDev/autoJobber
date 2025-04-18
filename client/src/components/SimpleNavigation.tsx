@@ -1,10 +1,10 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
-const SimpleNavigation = () => {
+const SimpleNavigation: React.FC = () => {
   const location = useLocation();
   
-  const isActive = (path) => {
+  const isActive = (path: string): boolean => {
     return location.pathname === path;
   };
   
@@ -59,6 +59,51 @@ const SimpleNavigation = () => {
               </Link>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="sm:hidden" id="mobile-menu">
+        <div className="pt-2 pb-3 space-y-1">
+          <Link 
+            to="/" 
+            className={`${
+              isActive('/') 
+                ? 'bg-blue-50 border-blue-500 text-blue-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium' 
+                : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 block pl-3 pr-4 py-2 border-l-4 text-base font-medium'
+            }`}
+          >
+            Aplicaciones
+          </Link>
+          <Link 
+            to="/profile" 
+            className={`${
+              isActive('/profile') 
+                ? 'bg-blue-50 border-blue-500 text-blue-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium' 
+                : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 block pl-3 pr-4 py-2 border-l-4 text-base font-medium'
+            }`}
+          >
+            Perfil
+          </Link>
+          <Link 
+            to="/preferences" 
+            className={`${
+              isActive('/preferences') 
+                ? 'bg-blue-50 border-blue-500 text-blue-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium' 
+                : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 block pl-3 pr-4 py-2 border-l-4 text-base font-medium'
+            }`}
+          >
+            Preferencias
+          </Link>
+          <Link 
+            to="/resume" 
+            className={`${
+              isActive('/resume') 
+                ? 'bg-blue-50 border-blue-500 text-blue-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium' 
+                : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 block pl-3 pr-4 py-2 border-l-4 text-base font-medium'
+            }`}
+          >
+            Currículum
+          </Link>
         </div>
       </div>
     </nav>

@@ -1,20 +1,56 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import ProfileSummary from './components/ProfileSummary';
-import JobApplicationsList from './components/JobApplicationsList';
-import JobPreferencesForm from './components/JobPreferencesForm';
-import ResumeUpload from './components/ResumeUpload';
-import Navigation from './components/Navigation';
+import SimpleNavigation from './components/SimpleNavigation';
+import SimpleJobApplicationsList from './components/SimpleJobApplicationsList';
+import SimpleProfileSummary from './components/SimpleProfileSummary';
+import SimpleJobPreferencesForm from './components/SimpleJobPreferencesForm';
+import SimpleResumeUpload from './components/SimpleResumeUpload';
 
-// Sample data for demonstration
-const mockApplications = [
+// Definición de tipos
+interface JobApplication {
+  id: string;
+  jobTitle: string;
+  company: string;
+  location: string | null;
+  applicationDate: string;
+  status: 'applied' | 'interview' | 'offer' | 'rejected' | 'withdrawn' | 'ghosted';
+  matchScore: number | null;
+}
+
+interface ProfileStats {
+  totalApplications: number;
+  activeApplications: number;
+  interviews: number;
+  offers: number;
+  rejections: number;
+}
+
+interface ResumeInfo {
+  name: string;
+  email: string;
+  topSkills: string[];
+  lastUpdated: string;
+  completionScore: number;
+}
+
+interface ResumeData {
+  name: string;
+  email: string;
+  skills: string[];
+  experience: string;
+  education: string;
+  lastUpdated: string;
+}
+
+// Datos de muestra
+const mockApplications: JobApplication[] = [
   {
     id: '1',
     jobTitle: 'Frontend Developer',
     company: 'TechCorp',
     location: 'Remote',
     applicationDate: '2023-05-15',
-    status: 'applied' as const,
+    status: 'applied',
     matchScore: 85,
   },
   {
@@ -23,12 +59,12 @@ const mockApplications = [
     company: 'WebSolutions',
     location: 'San Francisco, CA',
     applicationDate: '2023-05-20',
-    status: 'interview' as const,
+    status: 'interview',
     matchScore: 92,
   },
 ];
 
-const mockStats = {
+const mockStats: ProfileStats = {
   totalApplications: 24,
   activeApplications: 15,
   interviews: 5,
@@ -36,7 +72,7 @@ const mockStats = {
   rejections: 7,
 };
 
-const mockResumeInfo = {
+const mockResumeInfo: ResumeInfo = {
   name: 'John Doe',
   email: 'john.doe@example.com',
   topSkills: ['React', 'TypeScript', 'Node.js', 'GraphQL'],
@@ -45,49 +81,49 @@ const mockResumeInfo = {
 };
 
 const App: React.FC = () => {
-  const [applications] = useState(mockApplications);
+  const [applications] = useState<JobApplication[]>(mockApplications);
   
-  const handleViewDetails = (id: string) => {
-    console.log(`Viewing details for application ${id}`);
+  const handleViewDetails = (id: string): void => {
+    console.log(`Viendo detalles de la aplicación ${id}`);
   };
   
-  const handleUpdateStatus = (id: string, status: string) => {
-    console.log(`Updating status for application ${id} to ${status}`);
+  const handleUpdateStatus = (id: string, status: string): void => {
+    console.log(`Actualizando estado de la aplicación ${id} a ${status}`);
   };
   
-  const handleSubmitPreferences = async (values: any) => {
-    console.log('Submitting preferences:', values);
-    // In a real app, this would be an API call
+  const handleSubmitPreferences = async (values: any): Promise<void> => {
+    console.log('Enviando preferencias:', values);
+    // En una app real, esto sería una llamada a la API
     await new Promise(resolve => setTimeout(resolve, 500));
   };
   
-  const handleResumeUploadSuccess = (resumeData: any) => {
-    console.log('Resume uploaded successfully:', resumeData);
+  const handleResumeUploadSuccess = (resumeData: ResumeData): void => {
+    console.log('Currículum subido exitosamente:', resumeData);
   };
   
-  const handleUploadResume = () => {
-    console.log('Navigating to resume upload');
+  const handleUploadResume = (): void => {
+    console.log('Navegando a subida de currículum');
   };
   
-  const handleUpdateResume = () => {
-    console.log('Navigating to resume update');
+  const handleUpdateResume = (): void => {
+    console.log('Navegando a actualización de currículum');
   };
 
   return (
     <Router>
       <div className="min-h-screen bg-gray-50">
-        <Navigation />
+        <SimpleNavigation />
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <Routes>
             <Route path="/" element={
-              <JobApplicationsList 
+              <SimpleJobApplicationsList 
                 applications={applications} 
                 onViewDetails={handleViewDetails}
                 onUpdateStatus={handleUpdateStatus}
               />
             } />
             <Route path="/profile" element={
-              <ProfileSummary 
+              <SimpleProfileSummary 
                 stats={mockStats}
                 resumeInfo={mockResumeInfo}
                 onUploadResume={handleUploadResume}
@@ -95,10 +131,10 @@ const App: React.FC = () => {
               />
             } />
             <Route path="/preferences" element={
-              <JobPreferencesForm onSubmit={handleSubmitPreferences} />
+              <SimpleJobPreferencesForm onSubmit={handleSubmitPreferences} />
             } />
             <Route path="/resume" element={
-              <ResumeUpload onUploadSuccess={handleResumeUploadSuccess} />
+              <SimpleResumeUpload onUploadSuccess={handleResumeUploadSuccess} />
             } />
           </Routes>
         </div>

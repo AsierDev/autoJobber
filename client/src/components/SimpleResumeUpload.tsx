@@ -1,14 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, ChangeEvent, FormEvent } from 'react';
 
-const SimpleResumeUpload = ({ onUploadSuccess }) => {
-  const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState(null);
-  const [selectedFile, setSelectedFile] = useState(null);
+interface ResumeData {
+  name: string;
+  email: string;
+  skills: string[];
+  experience: string;
+  education: string;
+  lastUpdated: string;
+}
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+interface ResumeUploadProps {
+  onUploadSuccess?: (data: ResumeData) => void;
+}
 
+const SimpleResumeUpload: React.FC<ResumeUploadProps> = ({ onUploadSuccess }) => {
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
     if (file.type !== 'application/pdf' && 
         file.type !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       setError('Por favor, sube un archivo PDF o DOCX');
@@ -19,7 +33,7 @@ const SimpleResumeUpload = ({ onUploadSuccess }) => {
     setError(null);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!selectedFile) {
       setError('Por favor, selecciona un archivo primero');
@@ -34,7 +48,7 @@ const SimpleResumeUpload = ({ onUploadSuccess }) => {
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       // Simulación de respuesta exitosa
-      const mockResumeData = {
+      const mockResumeData: ResumeData = {
         name: 'John Doe',
         email: 'john.doe@example.com',
         skills: ['React', 'JavaScript', 'Node.js', 'TypeScript'],

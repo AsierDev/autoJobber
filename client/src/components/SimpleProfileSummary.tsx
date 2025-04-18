@@ -1,8 +1,36 @@
 import React from 'react';
 
-const SimpleProfileSummary = ({ stats, resumeInfo, onUploadResume, onUpdateResume }) => {
+interface ProfileStats {
+  totalApplications: number;
+  activeApplications: number;
+  interviews: number;
+  offers: number;
+  rejections: number;
+}
+
+interface ResumeInfo {
+  name: string;
+  email: string;
+  topSkills: string[];
+  lastUpdated: string;
+  completionScore: number;
+}
+
+interface ProfileSummaryProps {
+  stats?: ProfileStats;
+  resumeInfo?: ResumeInfo | null;
+  onUploadResume?: () => void;
+  onUpdateResume?: () => void;
+}
+
+const SimpleProfileSummary: React.FC<ProfileSummaryProps> = ({ 
+  stats, 
+  resumeInfo, 
+  onUploadResume, 
+  onUpdateResume 
+}) => {
   // Datos de muestra si no se proporcionan
-  const mockStats = stats || {
+  const mockStats: ProfileStats = stats || {
     totalApplications: 24,
     activeApplications: 15,
     interviews: 5,
@@ -10,7 +38,7 @@ const SimpleProfileSummary = ({ stats, resumeInfo, onUploadResume, onUpdateResum
     rejections: 7,
   };
 
-  const mockResumeInfo = resumeInfo || {
+  const mockResumeInfo: ResumeInfo | null = resumeInfo || {
     name: 'John Doe',
     email: 'john.doe@example.com',
     topSkills: ['React', 'TypeScript', 'Node.js', 'GraphQL'],
