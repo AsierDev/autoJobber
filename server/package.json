@@ -1,0 +1,44 @@
+{
+  "name": "autojobber-server",
+  "version": "1.0.0",
+  "description": "Backend server for AutoJobber platform",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "test": "jest"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1450.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-validator": "^7.0.1",
+    "helmet": "^7.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "pg": "^8.11.3",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.32.1",
+    "winston": "^3.10.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.3",
+    "@types/cors": "^2.8.14",
+    "@types/express": "^4.17.17",
+    "@types/jest": "^29.5.4",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/multer": "^1.4.7",
+    "@types/node": "^20.6.0",
+    "@types/pg": "^8.10.2",
+    "@types/supertest": "^2.0.12",
+    "@types/uuid": "^10.0.0",
+    "jest": "^29.6.4",
+    "supertest": "^6.3.3",
+    "ts-jest": "^29.1.1",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.2.2"
+  }
+}
