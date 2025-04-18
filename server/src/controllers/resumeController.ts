@@ -6,13 +6,37 @@ import AWS from 'aws-sdk';
 import Resume from '../models/Resume';
 import axios from 'axios';
 import multer from 'multer';
+import { sanitizeFilename } from '../utils/fileUtils';
 
 // Configure AWS S3
 const s3 = new AWS.S3({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   region: process.env.AWS_REGION || 'us-east-1',
+  signatureVersion: 'v4',
 });
+
+// Validate S3 configuration on startup
+const validateS3Config = async (): Promise<boolean> => {
+  if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
+    console.error('AWS credentials not configured');
+    return false;
+  }
+  
+  try {
+    const bucketName = process.env.AWS_S3_BUCKET || 'autojobber';
+    // Check if bucket exists and we have access
+    await s3.headBucket({ Bucket: bucketName }).promise();
+    console.log(`Successfully connected to S3 bucket: ${bucketName}`);
+    return true;
+  } catch (error) {
+    console.error('Error connecting to S3:', error);
+    return false;
+  }
+};
+
+// Call validation at module load time
+validateS3Config();
 
 // Configure multer for file uploads
 export const upload = multer({
@@ -26,7 +50,9 @@ export const upload = multer({
       cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
-      const uniqueFilename = `${uuidv4()}${path.extname(file.originalname)}`;
+      // Sanitize the original filename to prevent injection attacks
+      const sanitizedName = sanitizeFilename(file.originalname);
+      const uniqueFilename = `${uuidv4()}${path.extname(sanitizedName)}`;
       cb(null, uniqueFilename);
     },
   }),
@@ -54,6 +80,12 @@ export const uploadResume = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
+    // Check if S3 is configured
+    if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
+      res.status(500).json({ error: 'AWS S3 is not properly configured' });
+      return;
+    }
+
     const userId = req.user?.id;
     if (!userId) {
       res.status(401).json({ error: 'User not authenticated' });
@@ -64,17 +96,45 @@ export const uploadResume = async (req: Request, res: Response): Promise<void> =
     const filePath = file.path;
     const fileType = file.mimetype;
     const fileSize = file.size;
-    const originalFilename = file.originalname;
+    
+    // Sanitize original filename
+    const originalFilename = sanitizeFilename(file.originalname);
     const s3Key = `resumes/${userId}/${path.basename(filePath)}`;
+
+    // Additional validation
+    if (fileSize > 5 * 1024 * 1024) {
+      // Clean up local file
+      fs.unlinkSync(filePath);
+      res.status(400).json({ error: 'File size exceeds the maximum limit of 5MB' });
+      return;
+    }
+
+    // Validate content type from the actual file (not just the extension)
+    if (
+      fileType !== 'application/pdf' &&
+      fileType !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ) {
+      // Clean up local file
+      fs.unlinkSync(filePath);
+      res.status(400).json({ error: 'Invalid file type. Only PDF and DOCX files are allowed' });
+      return;
+    }
 
     // Upload file to S3
     const fileContent = fs.readFileSync(filePath);
+    const bucketName = process.env.AWS_S3_BUCKET || 'autojobber';
     const s3Result = await s3.upload({
-      Bucket: process.env.AWS_S3_BUCKET || 'autojobber',
+      Bucket: bucketName,
       Key: s3Key,
       Body: fileContent,
       ContentType: fileType,
       ACL: 'private',
+      // Set metadata for better organization
+      Metadata: {
+        'user-id': userId,
+        'original-filename': originalFilename,
+        'upload-date': new Date().toISOString(),
+      },
     }).promise();
 
     // Clean up local file
@@ -136,7 +196,7 @@ export const uploadResume = async (req: Request, res: Response): Promise<void> =
   }
 };
 
-// Get user's active resume
+// Get the active resume
 export const getActiveResume = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
@@ -166,12 +226,11 @@ export const getActiveResume = async (req: Request, res: Response): Promise<void
         fileSize: resume.fileSize,
         parsedData: resume.parsedData,
         createdAt: resume.createdAt,
-        updatedAt: resume.updatedAt,
       },
     });
   } catch (error) {
     console.error('Error getting active resume:', error);
-    res.status(500).json({ error: 'Server error getting resume' });
+    res.status(500).json({ error: 'Server error getting active resume' });
   }
 };
 
@@ -208,6 +267,52 @@ export const getUserResumes = async (req: Request, res: Response): Promise<void>
   }
 };
 
+// Set a resume as active
+export const setResumeActive = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: 'User not authenticated' });
+      return;
+    }
+
+    const { id } = req.params;
+
+    // Find the resume to set as active
+    const resume = await Resume.findOne({
+      where: {
+        id,
+        userId,
+      },
+    });
+
+    if (!resume) {
+      res.status(404).json({ error: 'Resume not found' });
+      return;
+    }
+
+    // Find and update the currently active resume
+    const activeResume = await Resume.findOne({
+      where: {
+        userId,
+        isActive: true,
+      },
+    });
+
+    if (activeResume && activeResume.id !== id) {
+      await activeResume.update({ isActive: false });
+    }
+
+    // Set the selected resume as active
+    await resume.update({ isActive: true });
+
+    res.status(200).json({ message: 'Resume set as active' });
+  } catch (error) {
+    console.error('Error setting resume as active:', error);
+    res.status(500).json({ error: 'Server error setting resume as active' });
+  }
+};
+
 // Delete a resume
 export const deleteResume = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -232,11 +337,18 @@ export const deleteResume = async (req: Request, res: Response): Promise<void> =
     }
 
     // Delete file from S3
+    const bucketName = process.env.AWS_S3_BUCKET || 'autojobber';
     const s3Key = `resumes/${userId}/${resume.filename}`;
-    await s3.deleteObject({
-      Bucket: process.env.AWS_S3_BUCKET || 'autojobber',
-      Key: s3Key,
-    }).promise();
+    
+    try {
+      await s3.deleteObject({
+        Bucket: bucketName,
+        Key: s3Key,
+      }).promise();
+    } catch (s3Error) {
+      console.error('Error deleting file from S3:', s3Error);
+      // Continue with deleting the database record even if S3 deletion fails
+    }
 
     // Delete resume record
     await resume.destroy();
@@ -245,72 +357,5 @@ export const deleteResume = async (req: Request, res: Response): Promise<void> =
   } catch (error) {
     console.error('Error deleting resume:', error);
     res.status(500).json({ error: 'Server error deleting resume' });
-  }
-};
-
-// Set a resume as active
-export const setResumeActive = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const userId = req.user?.id;
-    if (!userId) {
-      res.status(401).json({ error: 'User not authenticated' });
-      return;
-    }
-
-    const { id } = req.params;
-
-    // Find the target resume
-    const targetResume = await Resume.findOne({
-      where: {
-        id,
-        userId,
-      },
-    });
-
-    if (!targetResume) {
-      res.status(404).json({ error: 'Resume not found' });
-      return;
-    }
-
-    // Find current active resume
-    const activeResume = await Resume.findOne({
-      where: {
-        userId,
-        isActive: true,
-      },
-    });
-
-    // Begin transaction
-    const transaction = await Resume.sequelize!.transaction();
-
-    try {
-      // If there's already an active resume and it's different from the target
-      if (activeResume && activeResume.id !== targetResume.id) {
-        // Set it as inactive
-        await activeResume.update({ isActive: false }, { transaction });
-      }
-
-      // Set target resume as active
-      await targetResume.update({ isActive: true }, { transaction });
-
-      // Commit transaction
-      await transaction.commit();
-
-      res.status(200).json({
-        message: 'Resume set as active',
-        resume: {
-          id: targetResume.id,
-          filename: targetResume.originalFilename,
-          isActive: true,
-        },
-      });
-    } catch (error) {
-      // Rollback transaction on error
-      await transaction.rollback();
-      throw error;
-    }
-  } catch (error) {
-    console.error('Error setting resume as active:', error);
-    res.status(500).json({ error: 'Server error setting resume as active' });
   }
 }; 
