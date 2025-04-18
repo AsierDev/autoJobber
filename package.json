@@ -1,0 +1,26 @@
+{
+  "name": "autojobber",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "version": "1.0.0",
+  "description": "AI-powered job application management platform",
+  "license": "MIT",
+  "scripts": {
+    "start:client": "yarn workspace autojobber-client start",
+    "start:server": "yarn workspace autojobber-server dev",
+    "start:ai": "cd ai-service && source venv/bin/activate && python -m uvicorn src.main:app --reload --host 0.0.0.0 --port 8000",
+    "dev": "concurrently \"yarn start:server\" \"yarn start:client\" \"yarn start:ai\"",
+    "install:all": "yarn install && yarn setup:python",
+    "build:client": "yarn workspace autojobber-client build",
+    "build:server": "yarn workspace autojobber-server build",
+    "build": "yarn build:server && yarn build:client",
+    "test": "yarn workspace autojobber-client test && yarn workspace autojobber-server test",
+    "setup:python": "cd ai-service && /opt/homebrew/bin/python3.11 -m venv venv && source venv/bin/activate && pip install --upgrade pip wheel setuptools && pip install -r requirements.txt"
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.1"
+  }
+}
