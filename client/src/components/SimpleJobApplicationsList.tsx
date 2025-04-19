@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 
 interface JobApplication {
   id: string;
@@ -21,6 +22,8 @@ const SimpleJobApplicationsList: React.FC<JobApplicationsListProps> = ({
   onViewDetails, 
   onUpdateStatus 
 }) => {
+  const navigate = useNavigate();
+  
   // Valores de ejemplo si no se proporcionan applications
   const sampleApplications: JobApplication[] = applications || [
     {
@@ -44,7 +47,14 @@ const SimpleJobApplicationsList: React.FC<JobApplicationsListProps> = ({
   ];
   
   // Funciones por defecto si no se proporcionan
-  const handleViewDetails = onViewDetails || ((id: string) => console.log(`Ver detalles de ${id}`));
+  const handleViewDetails = (id: string) => {
+    if (onViewDetails) {
+      onViewDetails(id);
+    } else {
+      navigate(`/application/${id}`);
+    }
+  };
+  
   const handleUpdateStatus = onUpdateStatus || ((id: string, status: string) => console.log(`Actualizar estado de ${id} a ${status}`));
   
   // Mapeo de estados a colores
@@ -117,6 +127,13 @@ const SimpleJobApplicationsList: React.FC<JobApplicationsListProps> = ({
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">{application.company}</div>
+                  <Link 
+                    to={`/company-ratings/company/${encodeURIComponent(application.company)}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-xs text-blue-600 hover:text-blue-800"
+                  >
+                    Ver valoraciones
+                  </Link>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-500">

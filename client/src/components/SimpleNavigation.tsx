@@ -5,7 +5,7 @@ const SimpleNavigation: React.FC = () => {
   const location = useLocation();
   
   const isActive = (path: string): boolean => {
-    return location.pathname === path;
+    return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };
   
   return (
@@ -20,7 +20,7 @@ const SimpleNavigation: React.FC = () => {
               <Link 
                 to="/" 
                 className={`px-3 py-2 text-sm font-medium ${
-                  isActive('/') 
+                  isActive('/') && !location.pathname.startsWith('/company-ratings')
                     ? 'text-blue-600 border-b-2 border-blue-500' 
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
@@ -57,6 +57,16 @@ const SimpleNavigation: React.FC = () => {
               >
                 Currículum
               </Link>
+              <Link 
+                to="/company-ratings" 
+                className={`px-3 py-2 text-sm font-medium ${
+                  isActive('/company-ratings') 
+                    ? 'text-blue-600 border-b-2 border-blue-500' 
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Empresas
+              </Link>
             </div>
           </div>
         </div>
@@ -67,7 +77,7 @@ const SimpleNavigation: React.FC = () => {
           <Link 
             to="/" 
             className={`${
-              isActive('/') 
+              isActive('/') && !location.pathname.startsWith('/company-ratings')
                 ? 'bg-blue-50 border-blue-500 text-blue-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium' 
                 : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 block pl-3 pr-4 py-2 border-l-4 text-base font-medium'
             }`}
@@ -103,6 +113,16 @@ const SimpleNavigation: React.FC = () => {
             }`}
           >
             Currículum
+          </Link>
+          <Link 
+            to="/company-ratings" 
+            className={`${
+              isActive('/company-ratings') 
+                ? 'bg-blue-50 border-blue-500 text-blue-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium' 
+                : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 block pl-3 pr-4 py-2 border-l-4 text-base font-medium'
+            }`}
+          >
+            Empresas
           </Link>
         </div>
       </div>

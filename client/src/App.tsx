@@ -6,6 +6,8 @@ import SimpleProfileSummary from './components/SimpleProfileSummary';
 import SimpleJobPreferencesForm from './components/SimpleJobPreferencesForm';
 import SimpleResumeUpload from './components/SimpleResumeUpload';
 import { createJobPreference } from './services/jobPreferenceService';
+import CompanyRatingsManager from './components/CompanyRatingsManager';
+import JobApplicationDetail from './components/JobApplicationDetail';
 
 // Definición de tipos
 interface JobApplication {
@@ -140,6 +142,18 @@ const App: React.FC = () => {
             } />
             <Route path="/resume" element={
               <SimpleResumeUpload onUploadSuccess={handleResumeUploadSuccess} />
+            } />
+            <Route path="/application/:id" element={
+              <JobApplicationDetail />
+            } />
+            <Route path="/company-ratings" element={
+              <CompanyRatingsManager mode="all" />
+            } />
+            <Route path="/company-ratings/:tab" element={
+              <CompanyRatingsManager />
+            } />
+            <Route path="/company-ratings/company/:companyName" element={
+              <CompanyRatingsManager mode="company" />
             } />
           </Routes>
         </div>
