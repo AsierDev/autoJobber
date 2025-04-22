@@ -6,10 +6,7 @@ import User from "../models/User";
 declare global {
   namespace Express {
     interface Request {
-      user?: {
-        id: string;
-        email: string;
-      };
+      user?: any;
     }
   }
 }
@@ -19,55 +16,73 @@ declare global {
  */
 export const authenticate = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    // For development only - uncomment to inject a mock user for testing
-    // Skip JWT validation during development if needed
-    if (process.env.NODE_ENV === 'development' && process.env.MOCK_AUTH === 'true') {
-      req.user = { id: "mock-user-id", email: "user@example.com" };
-      next();
-      return;
-    }
-
-    // Get the token from the headers
     const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+
+    if (!authHeader) {
       res.status(401).json({ error: 'No authentication token provided' });
       return;
     }
 
-    // Extract the token
-    const token = authHeader.split(' ')[1];
-    
-    // Verify the token
-    const jwtSecret = process.env.JWT_SECRET;
-    
-    if (!jwtSecret) {
-      console.error('JWT secret is not configured');
-      res.status(500).json({ error: 'Authentication service misconfigured' });
+    // Para desarrollo, aceptar un token simulado
+    if (authHeader === 'Bearer mock-token-for-development' && process.env.NODE_ENV !== 'production') {
+      // Configurar un usuario de prueba para desarrollo
+      req.user = {
+        id: '00000000-0000-0000-0000-000000000000',
+        email: 'test@example.com',
+        name: 'Test User',
+        role: 'user'
+      };
+      next();
       return;
     }
+
+    // Validación normal de JWT para producción
+    const token = authHeader.split(' ')[1];
     
-    // Verify token
-    const decoded = jwt.verify(token, jwtSecret) as { id: string, email: string };
+    if (!token) {
+      res.status(401).json({ error: 'Invalid authentication token format' });
+      return;
+    }
+
+    // Verificar el token
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'default_secret_key_for_dev');
     
-    // Get user from database
+    // Buscar el usuario en la base de datos
     const user = await User.findByPk(decoded.id);
     
     if (!user) {
-      res.status(401).json({ error: 'Invalid authentication token' });
+      res.status(401).json({ error: 'User not found' });
       return;
     }
     
-    // Set user on request
-    req.user = { id: user.id, email: user.email };
-    
+    // Añadir el usuario a la request
+    req.user = user;
     next();
   } catch (error) {
-    console.error("Authentication error:", error);
+    console.error('Authentication error:', error);
+    
     if (error instanceof jwt.JsonWebTokenError) {
-      res.status(401).json({ error: "Invalid token" });
-    } else {
-      res.status(401).json({ error: "Authentication failed" });
+      res.status(401).json({ error: 'Invalid token' });
+      return;
     }
+    
+    res.status(500).json({ error: 'Internal server error during authentication' });
   }
+};
+
+// Middleware para verificar roles
+export const authorize = (roles: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      res.status(401).json({ error: 'User not authenticated' });
+      return;
+    }
+
+    if (!roles.includes(req.user.role)) {
+      res.status(403).json({ error: 'Unauthorized: Insufficient permissions' });
+      return;
+    }
+
+    next();
+  };
 };

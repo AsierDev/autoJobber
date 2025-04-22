@@ -1,13 +1,5 @@
-import React, { useState, ChangeEvent, FormEvent } from 'react';
-
-interface ResumeData {
-  name: string;
-  email: string;
-  skills: string[];
-  experience: string;
-  education: string;
-  lastUpdated: string;
-}
+import React, { useState, ChangeEvent, FormEvent, useRef, DragEvent } from 'react';
+import { uploadResume, ResumeData } from '../services/resumeService';
 
 interface ResumeUploadProps {
   onUploadSuccess?: (data: ResumeData) => void;
@@ -17,20 +9,53 @@ const SimpleResumeUpload: React.FC<ResumeUploadProps> = ({ onUploadSuccess }) =>
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
+    
+    validateAndSetFile(files[0]);
+  };
 
-    const file = files[0];
+  const validateAndSetFile = (file: File) => {
     if (file.type !== 'application/pdf' && 
         file.type !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       setError('Por favor, sube un archivo PDF o DOCX');
       return;
     }
 
+    if (file.size > 5 * 1024 * 1024) {
+      setError('El archivo no debe superar los 5MB');
+      return;
+    }
+
     setSelectedFile(file);
     setError(null);
+  };
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      validateAndSetFile(files[0]);
+    }
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -44,28 +69,29 @@ const SimpleResumeUpload: React.FC<ResumeUploadProps> = ({ onUploadSuccess }) =>
     setError(null);
 
     try {
-      // Simulación de subida
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const resumeData = await uploadResume(selectedFile);
       
-      // Simulación de respuesta exitosa
-      const mockResumeData: ResumeData = {
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        skills: ['React', 'JavaScript', 'Node.js', 'TypeScript'],
-        experience: '5 years',
-        education: 'Computer Science Degree',
-        lastUpdated: new Date().toISOString().split('T')[0],
-      };
-
-      // Llamar callback de éxito
       if (onUploadSuccess) {
-        onUploadSuccess(mockResumeData);
-      } else {
-        console.log('Subida exitosa:', mockResumeData);
+        onUploadSuccess(resumeData);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error al subir el currículum:', err);
-      setError('Ocurrió un error al procesar tu currículum. Por favor, intenta de nuevo.');
+      
+      let errorMessage = 'Ocurrió un error al procesar tu currículum. Por favor, intenta de nuevo.';
+      
+      // Intentar extraer el mensaje de error del JSON si existe
+      try {
+        if (err.message) {
+          const errorObj = JSON.parse(err.message);
+          if (errorObj.error) {
+            errorMessage = errorObj.error;
+          }
+        }
+      } catch (parseErr) {
+        // Si no podemos analizar el error, usamos el mensaje predeterminado
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsUploading(false);
     }
@@ -79,8 +105,15 @@ const SimpleResumeUpload: React.FC<ResumeUploadProps> = ({ onUploadSuccess }) =>
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="border-2 border-dashed p-6 rounded-lg text-center cursor-pointer hover:border-blue-400 transition-colors">
+        <div 
+          className={`border-2 ${isDragging ? 'border-blue-400 bg-blue-50' : 'border-dashed'} p-6 rounded-lg text-center cursor-pointer hover:border-blue-400 transition-colors`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+        >
           <input
+            ref={fileInputRef}
             type="file"
             accept=".pdf,.docx"
             onChange={handleFileChange}
@@ -88,28 +121,26 @@ const SimpleResumeUpload: React.FC<ResumeUploadProps> = ({ onUploadSuccess }) =>
             id="resume-file"
           />
           
-          <label htmlFor="resume-file" className="cursor-pointer block">
-            <svg 
-              className="mx-auto h-12 w-12 text-gray-400" 
-              stroke="currentColor" 
-              fill="none" 
-              viewBox="0 0 48 48" 
-              aria-hidden="true"
-            >
-              <path 
-                d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4h-8m-12 0h8m-8 0v-8m0 0v-8m0 0h8m-8 0h-8m8 8h8"
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-              />
-            </svg>
-            <p className="mt-2 text-sm text-gray-600">
-              Haz clic para seleccionar o arrastra tu currículum aquí
-            </p>
-            <p className="mt-1 text-xs text-gray-500">
-              Archivos PDF o DOCX solamente
-            </p>
-          </label>
+          <svg 
+            className="mx-auto h-12 w-12 text-gray-400" 
+            stroke="currentColor" 
+            fill="none" 
+            viewBox="0 0 48 48" 
+            aria-hidden="true"
+          >
+            <path 
+              d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4h-8m-12 0h8m-8 0v-8m0 0v-8m0 0h8m-8 0h-8m8 8h8"
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+            />
+          </svg>
+          <p className="mt-2 text-sm text-gray-600">
+            Haz clic para seleccionar o arrastra tu currículum aquí
+          </p>
+          <p className="mt-1 text-xs text-gray-500">
+            Archivos PDF o DOCX solamente (máx. 5MB)
+          </p>
         </div>
         
         {selectedFile && (
@@ -134,7 +165,10 @@ const SimpleResumeUpload: React.FC<ResumeUploadProps> = ({ onUploadSuccess }) =>
             </div>
             <button 
               type="button"
-              onClick={() => setSelectedFile(null)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedFile(null);
+              }}
               className="text-sm text-gray-500 hover:text-red-500"
             >
               Eliminar
@@ -172,4 +206,4 @@ const SimpleResumeUpload: React.FC<ResumeUploadProps> = ({ onUploadSuccess }) =>
   );
 };
 
-export default SimpleResumeUpload; 
+export default SimpleResumeUpload;

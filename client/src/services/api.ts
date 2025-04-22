@@ -1,22 +1,21 @@
 import axios from 'axios';
+import { API_URL } from '../config/constants';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-
-// Create axios instance with default config
+// Crear instancia de axios con configuración predeterminada
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: `${API_URL}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Add a request interceptor to include auth token
+// Interceptor para incluir token de autenticación
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    // Para desarrollo, usar un token simulado
+    // En producción, obtendríamos el token del localStorage o de un estado de autenticación
+    const mockToken = 'mock-token-for-development';
+    config.headers.Authorization = `Bearer ${mockToken}`;
     return config;
   },
   (error) => {

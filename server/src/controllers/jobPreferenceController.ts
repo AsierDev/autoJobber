@@ -19,33 +19,65 @@ export const createJobPreference = async (req: Request, res: Response): Promise<
       return;
     }
 
-    // Create a unique ID for version tracking
-    const versionId = uuidv4();
-
-    // Check if user already has active preferences
-    const existingPreference = await JobPreference.findOne({
-      where: {
+    // En entorno de desarrollo con usuario simulado, simular creación exitosa
+    if (process.env.NODE_ENV !== 'production' && userId === '00000000-0000-0000-0000-000000000000') {
+      // Datos simulados para desarrollo
+      const mockPreference = {
+        id: 'mock-preference-created-id',
         userId,
+        title: preferenceData.title,
+        industry: preferenceData.industry || null,
+        location: preferenceData.location || null,
+        workMode: preferenceData.workMode || null,
+        minSalary: preferenceData.minSalary || null,
+        maxSalary: preferenceData.maxSalary || null,
+        companySize: preferenceData.companySize || null,
+        keywords: preferenceData.keywords || [],
         isActive: true,
-      },
-    });
-
-    // If there are existing active preferences, deactivate them
-    if (existingPreference) {
-      await existingPreference.update({ isActive: false });
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      res.status(201).json({
+        message: 'Job preference created successfully',
+        preference: mockPreference,
+      });
+      return;
     }
 
-    // Create new job preference
-    const jobPreference = await JobPreference.create({
-      ...preferenceData,
-      userId,
-      isActive: true,
-    });
+    // Continuar con la lógica normal para producción
+    try {
+      // Create a unique ID for version tracking
+      const versionId = uuidv4();
 
-    res.status(201).json({
-      message: 'Job preference created successfully',
-      preference: jobPreference,
-    });
+      // Check if user already has active preferences
+      const existingPreference = await JobPreference.findOne({
+        where: {
+          userId,
+          isActive: true,
+        },
+      });
+
+      // If there are existing active preferences, deactivate them
+      if (existingPreference) {
+        await existingPreference.update({ isActive: false });
+      }
+
+      // Create new job preference
+      const jobPreference = await JobPreference.create({
+        ...preferenceData,
+        userId,
+        isActive: true,
+      });
+
+      res.status(201).json({
+        message: 'Job preference created successfully',
+        preference: jobPreference,
+      });
+    } catch (dbError) {
+      console.error('Database error creating job preference:', dbError);
+      res.status(500).json({ error: 'Database error creating job preference' });
+    }
   } catch (error) {
     console.error('Error creating job preference:', error);
     res.status(500).json({ error: 'Server error creating job preference' });
@@ -61,19 +93,47 @@ export const getActiveJobPreference = async (req: Request, res: Response): Promi
       return;
     }
 
-    const activePreference = await JobPreference.findOne({
-      where: {
-        userId,
-        isActive: true,
-      },
-    });
-
-    if (!activePreference) {
-      res.status(404).json({ error: 'No active job preference found' });
+    // En entorno de desarrollo con usuario simulado, devolver datos simulados
+    if (process.env.NODE_ENV !== 'production' && userId === '00000000-0000-0000-0000-000000000000') {
+      // Datos simulados para desarrollo
+      res.status(200).json({
+        preference: {
+          id: 'mock-preference-id',
+          title: 'Desarrollador Full Stack',
+          industry: 'Tecnología',
+          location: 'Ciudad de México, México',
+          workMode: 'hybrid',
+          minSalary: 40000,
+          maxSalary: 60000,
+          companySize: 'medium',
+          keywords: ['React', 'Node.js', 'TypeScript', 'JavaScript', 'MongoDB'],
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      });
       return;
     }
 
-    res.status(200).json({ preference: activePreference });
+    // Continuar con la lógica normal para producción
+    try {
+      const activePreference = await JobPreference.findOne({
+        where: {
+          userId,
+          isActive: true,
+        },
+      });
+
+      if (!activePreference) {
+        res.status(404).json({ error: 'No active job preference found' });
+        return;
+      }
+
+      res.status(200).json({ preference: activePreference });
+    } catch (dbError) {
+      console.error('Database error retrieving active job preference:', dbError);
+      res.status(500).json({ error: 'Database error retrieving job preference' });
+    }
   } catch (error) {
     console.error('Error retrieving active job preference:', error);
     res.status(500).json({ error: 'Server error retrieving job preference' });

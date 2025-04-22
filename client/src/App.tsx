@@ -8,6 +8,9 @@ import SimpleResumeUpload from './components/SimpleResumeUpload';
 import { createJobPreference } from './services/jobPreferenceService';
 import CompanyRatingsManager from './components/CompanyRatingsManager';
 import JobApplicationDetail from './components/JobApplicationDetail';
+import Dashboard from './components/Dashboard';
+import ResumeManagement from './components/ResumeManagement';
+import { ResumeData as ServiceResumeData } from './services/resumeService';
 
 // Definición de tipos
 interface JobApplication {
@@ -36,7 +39,8 @@ interface ResumeInfo {
   completionScore: number;
 }
 
-interface ResumeData {
+// Mantener esta interface para compatibilidad con el SimpleProfileSummary existente
+interface LegacyResumeData {
   name: string;
   email: string;
   skills: string[];
@@ -104,8 +108,10 @@ const App: React.FC = () => {
     }
   };
   
-  const handleResumeUploadSuccess = (resumeData: ResumeData): void => {
+  const handleResumeUploadSuccess = (resumeData: ServiceResumeData): void => {
     console.log('Currículum subido exitosamente:', resumeData);
+    
+    // Aquí se podría transformar ServiceResumeData a LegacyResumeData si fuera necesario
   };
   
   const handleUploadResume = (): void => {
@@ -122,7 +128,8 @@ const App: React.FC = () => {
         <SimpleNavigation />
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <Routes>
-            <Route path="/" element={
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/applications" element={
               <SimpleJobApplicationsList 
                 applications={applications} 
                 onViewDetails={handleViewDetails}
@@ -140,7 +147,8 @@ const App: React.FC = () => {
             <Route path="/preferences" element={
               <SimpleJobPreferencesForm onSubmit={handleSubmitPreferences} />
             } />
-            <Route path="/resume" element={
+            <Route path="/resume" element={<ResumeManagement />} />
+            <Route path="/resume/upload" element={
               <SimpleResumeUpload onUploadSuccess={handleResumeUploadSuccess} />
             } />
             <Route path="/application/:id" element={
